@@ -1,0 +1,59 @@
+---
+title: Hello
+date:  "`r format(Sys.time(), '%d %B %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warning=FALSE)
+library(DataExplorer)
+library(tidyverse)
+# 
+# params$title
+# read_delim('/home/pierre/Documents/School/S2/Data Viz/Tuto2/tauxchomage.csv',';') 
+donnee=params$mesdata
+# read_csv('./datavizfin.csv')
+```
+
+## Présentation du jeu de données :
+
+```{r echo=FALSE}
+#Utilisation de Data Explorer
+intro=introduce(donnee)
+eval_na=as.logical(intro$rows-intro$complete_rows)
+plot_intro(donnee)
+```
+```{r eval=eval_na}
+plot_missing(donnee)
+```
+```{r}
+Barplot=plot_bar(donnee)
+Histo=plot_histogram(donnee)
+```
+
+```{r}
+colnames(donnee)
+qq_data <- donnee
+qqp=plot_qq(qq_data, sampled_rows = 1000L)
+```
+```{r}
+plot_correlation(donnee)
+
+```
+
+```{r, eval=FALSE}
+dat=donnee %>% select(-all_of(colnames(donnee)[(sapply(donnee, class)!="numeric")]))
+
+plot_prcomp( na.omit(dat), variance_cap = 0.8, nrow = 2L, ncol = 2L)
+```
+## Modèle : 
+
+
+## 
+
+
+## Tests sur les hypothèses
+```{r}
+
+```
+
