@@ -22,7 +22,7 @@ shinyServer(function(session,input, output) {
    
     observe({
       vchoices <- names(datasetInput())
-      updateRadioButtons(session, "TargetVar", choices = vchoices)
+      updateSelectInput(session, "TargetVar", choices = vchoices)
       updateCheckboxGroupInput(session, "ExpVar", choices = vchoices)
     })
     
