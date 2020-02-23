@@ -45,26 +45,32 @@ shinyServer(function(input, output) {
       },
       
     
-      content = withProgress(message = 'Calculation in progress',
-                 detail = 'This may take a while...', value = 0, {
+       
                  
-      function(file) {
-        params <- list(title = input$titleOutput, mesdata = datasetInput())
+      content =function(file) {
+        
+        withProgress(message = 'Calculation in progress', detail = 'This may take a while...', value = 0, {
+        params <- list(title = input$titleOutput, mesdata = datasetInput(),PCA=TRUE)
         src <- normalizePath('report.Rmd')
+        incProgress(1/10)
         # temporarily switch to the temp dir, in case you do not have write
         # permission to the current working directory
         owd <- setwd(tempdir())
         on.exit(setwd(owd))
         file.copy(src, 'report.Rmd', overwrite = TRUE)
-        
         library(rmarkdown)
+        
         out <- render('report.Rmd', switch(
           input$format,
           PDF = pdf_document(), HTML = html_document(), Word = word_document()
-        ))
+        ),
+        incProgress(2/10,message = 'Création du Rapport', detail = 'knitr')
+        )
+        
         file.rename(out, file)
+        })
       }
-                 })
+               
     )
     
   

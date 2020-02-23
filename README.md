@@ -1,3 +1,7 @@
+
+
+[![Hello](https://img.shields.io/badge/Language-R-blue)](Ade)
+
 # Data Visualisation
 Projet de Data Viz
 
@@ -7,3 +11,4 @@ Projet de Data Viz
 * Application Shiny :  
   But de l'application : Création interactive de modèle + Téléchargement d'un rapport automatique.
  
+## Running the app

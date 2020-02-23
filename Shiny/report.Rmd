@@ -17,43 +17,62 @@ donnee=params$mesdata
 
 ## Présentation du jeu de données :
 
-```{r echo=FALSE}
+```{r}
+#Dans tout les Chunks incProgress indique la progression à l'utilisateur
+incProgress(1/10,message = 'Présentation du jeu de données', detail = 'kniting')
+
 #Utilisation de Data Explorer
 intro=introduce(donnee)
 eval_na=as.logical(intro$rows-intro$complete_rows)
 plot_intro(donnee)
 ```
+
+`r if (eval_na) '# Données manquantes'`
 ```{r eval=eval_na}
+incProgress(1/10,message = 'Représentation des données manquantes', detail = 'knitr')
 plot_missing(donnee)
 ```
+
+### Barplot & Histogrammes
 ```{r}
+#Dans tout les Chunks incProgress indique la progression à l'utilisateur
+incProgress(1/10,message = 'Création des Barplot & Histogrammes', detail = 'kniting')
+
 Barplot=plot_bar(donnee)
 Histo=plot_histogram(donnee)
 ```
 
+### QQ-Plots
 ```{r}
-colnames(donnee)
+#Dans tout les Chunks incProgress indique la progression à l'utilisateur
+incProgress(1/10,message = 'Création des QQ-plots', detail = 'kniting')
 qq_data <- donnee
 qqp=plot_qq(qq_data, sampled_rows = 1000L)
+qqp
 ```
+
+### Matrice des corrélations
 ```{r}
+#Dans tout les Chunks incProgress indique la progression à l'utilisateur
+incProgress(1/10,message = 'Création de la matrice des corrélations', detail = 'kniting')
 plot_correlation(donnee)
-
 ```
 
-```{r, eval=FALSE}
-dat=donnee %>% select(-all_of(colnames(donnee)[(sapply(donnee, class)!="numeric")]))
 
+`r if (params$PCA) '# ACP'`
+```{r, eval=params$PCA}
+incProgress(1/10,message = 'ACP', detail = 'kniting')
+
+dat=donnee %>% select(-all_of(colnames(donnee)[(sapply(donnee, class)!="numeric")]))
 plot_prcomp( na.omit(dat), variance_cap = 0.8, nrow = 2L, ncol = 2L)
 ```
 ## Modèle : 
-
 
 ## 
 
 
 ## Tests sur les hypothèses
-```{r}
+```{r echo=FALSE}
 
 ```
 

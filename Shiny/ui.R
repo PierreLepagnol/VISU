@@ -14,7 +14,6 @@ shinyUI(navbarPage(
     tabPanel("Importation / Exportation",
              sidebarLayout(
                  sidebarPanel(
-                     
                      tags$h2("Importation"),
                      fileInput("file1", "Choisir un fichier",
                                multiple = FALSE,
@@ -29,7 +28,7 @@ shinyUI(navbarPage(
                  ),
                  # Show a plot of the generated distribution
                  mainPanel(
-                     dataTableOutput("mydataset")
+                    dataTableOutput("mydataset")
                  )
              )
     ), 
