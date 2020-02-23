@@ -22,7 +22,8 @@ shinyServer(function(session,input, output) {
    
     observe({
       vchoices <- names(datasetInput())
-      updateRadioButtons(session, "column1", choices = vchoices)
+      updateRadioButtons(session, "TargetVar", choices = vchoices)
+      updateCheckboxGroupInput(session, "ExpVar", choices = vchoices)
     })
     
     # Upload du Dataset

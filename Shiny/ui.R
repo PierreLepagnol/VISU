@@ -42,7 +42,7 @@ shinyUI(navbarPage(
              splitLayout(
                 wellPanel(
                      # Selection du type de problème
-                     radioButtons('TypeMod', 'Choisir le type de problème :', choices = c('Classifcation','Régression'),selected='Régression'),
+                     radioButtons('TypeMod', label=h3('Choisir le type de problème :'), choices = c('Classifcation','Régression'),selected='Régression'),
             
                      # Panneau pour la Regression
                      conditionalPanel(condition = "input.TypeMod == 'Régression'",
@@ -54,14 +54,13 @@ shinyUI(navbarPage(
                                       selectInput("Algo", "Méfrthode",list("lm", "glm", "gam", "loess", "rlm"))
                                       )
                      ),
-                wellPanel(
-                    splitLayout(
-                         radioButtons("column1","select columns",choices = "",inline = T),
-                         checkboxGroupInput("checkGroup", label = h3("Checkbox group"), 
+                    wellPanel(fluidRow(
+                        column(width=6, radioButtons("TargetVar",label = h3("select columns"),choices = "")) ,
+                        column(width=6, checkboxGroupInput("ExpVar", label = h3("Checkbox group"), 
                                             choices = list("All" = '.', "Choice 2" = 2, "Choice 3" = 3),
                                             selected = 1)
                          )
-                     ),
+                     )),
              
                     absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
                                     wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimisation des hypers paramètres"))),
@@ -70,5 +69,5 @@ shinyUI(navbarPage(
                 )
              )
     ),
-    tabPanel("Prédiction",)
+    tabPanel("Prédiction",sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel('Prédictions selon le modèle créer','Carte de Paris avec la création')))
 ))
