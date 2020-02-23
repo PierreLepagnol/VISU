@@ -3,7 +3,7 @@ library(readr)
 library(DT)
 
 # Fonction Serveur 
-shinyServer(function(input, output) {
+shinyServer(function(session,input, output) {
     # Upload du Dataset 
     datasetInput <- reactive({
       #
@@ -20,7 +20,10 @@ shinyServer(function(input, output) {
     
     
    
-    
+    observe({
+      vchoices <- names(datasetInput())
+      updateRadioButtons(session, "column1", choices = vchoices)
+    })
     
     # Upload du Dataset
     output$distPlot <- renderPlot({
@@ -33,20 +36,16 @@ shinyServer(function(input, output) {
         hist(x, breaks = bins, col = 'darkgray', border = 'white')
 
     })
-    
+  
     
       # Fonction de téléchargement du rapport
-    
     output$downloadReport <- downloadHandler(
       filename = function() {
         paste(input$titleOutput, sep = '.', switch(
           input$format, PDF = 'pdf', HTML = 'html', Word = 'docx'
         ))
       },
-      
-    
-       
-                 
+
       content =function(file) {
         
         withProgress(message = 'Calculation in progress', detail = 'This may take a while...', value = 0, {
@@ -68,9 +67,8 @@ shinyServer(function(input, output) {
         )
         
         file.rename(out, file)
-        })
+      })
       }
-               
     )
     
   
