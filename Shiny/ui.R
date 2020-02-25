@@ -2,37 +2,26 @@
 library(shiny)
 library(DT)
 library(markdown)
-
+library(leaflet)
 
 # tweaks, un objet de liste pour configurer les multicols pour la checkboxGroupInput
-tweaks <- 
-    list(tags$head(tags$style(HTML("
-                                 .multicol { 
-                                   height: auto;
-                                   -webkit-column-count: 3; /* Chrome, Safari, Opera */ 
-                                   -moz-column-count: 3;    /* Firefox */ 
-                                   column-count: 3; 
-                                   -moz-column-fill: auto;
-                                   -column-fill: auto;
-                                 } 
-                                 ")) 
-    ))
+tweaks <- list(tags$head(tags$style(HTML(".multicol { height: auto;
+                                                    -webkit-column-count: 3; /* Chrome, Safari, Opera */ 
+                                                    -moz-column-count: 3;    /* Firefox */ 
+                                                    column-count: 3; 
+                                                    -moz-column-fill: auto;
+                                                    -column-fill: auto;}"))))
 
-# les valeurs à afficher ou à ne pas afficher, il s'agira des valeurs "choices' et 'selected' our la case à checkboxGroupInput
-controls <-
-     
-
-
-
-shinyUI(navbarPage(
+shinyUI(
+    navbarPage(
+    
     # Titre de l'application 
-    "Service de reporting automatisé",
+    title ="Service de reporting automatisé",
     
     # Onglet : Importation / Exportation
         # Importation : Jeu de données avec séparateur
         # Exportation : Rapport sur le modèle
-    
-    tabPanel("Importation / Exportation",
+    tabPanel(title="Importation / Exportation",
              sidebarLayout(
                  sidebarPanel(
                      # Importation
@@ -51,42 +40,57 @@ shinyUI(navbarPage(
                  )
              )
     ), 
-    # 
+    
     # Onglet : Modélisation
         # Création de différents modèles à inclure dans le rapport
-        # Exportation : Rapport sur le modèle
     
     tabPanel("Modélisation",
              splitLayout(
-                 
                 wellPanel(
-                     # Selection du type de problème
-                     radioButtons('TypeMod', label='Choisir le type de problème :', choices = c('Classifcation','Régression'),selected='Régression'),
-            
-                     # Panneau pour la Regression
-                     conditionalPanel(condition = "input.TypeMod == 'Régression'",
-                                      selectInput("smoothMethod", "Méthode",list("lm", "glm", "gam", "loess", "rlm"))
-                                      ),
-                     # Panneau pour la Classification
-                     conditionalPanel(condition = "input.TypeMod == 'Classifcation'",
-                                      textInput("Formula", "Formule", placeholder = 'Y.~X1+...+Xn'),
-                                      selectInput("Algo", "Méfrthode",list("lm", "glm", "gam", "loess", "rlm"))
-                                      )
-                     ),
+                    splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choices = c('Train/Test Validation','CrossValidation')),
+                                sliderInput('SliderFold', label='Nombre de blocs :',min=1,max=80,value = 20,)
+                        ),
+                        splitLayout(
+                            # Selection du type de problème
+                        radioButtons('TypeMod', label='Choisir le type de problème :', choices = c('Classifcation','Régression')),
+                            # Panneau Choix Algo
+                        checkboxGroupInput("AlgoInput", "Méthode",list())                        
+                     )),
                     wellPanel(tweaks,
                               list(h3("Sélection des variables"),
-                                   selectInput("TargetVar","Variable Cible",list("Télécharger un jeu de données")),
+                                   selectizeInput("TargetVar","Variable Cible", choices = NULL, options = list(placeholder = "Télécharger un jeu de données")),
                                    tags$div(align = 'left',class = 'multicol',
-                                            checkboxGroupInput('ExpVar',"Variables Explicatives", list("Télécharger un jeu de données"=NULL),inline   = FALSE))),
-                               )
+                                            checkboxGroupInput('ExpVar',"Variables Explicatives", list("Télécharger un jeu de données"=NULL),inline   = FALSE)))
+                              )
                 )
              ),
-    tabPanel("Prédiction",
-             absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
-                           wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimistion des hypers paramètres"))),
-                                     sliderInput("n", "", min=3, max=20, value=5)
-                                    )
-    ),
-    sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel('Prédictions selon le modèle créer','Carte de Paris avec la création')))
-))
+    
+    tabPanel(
+        title="Prédiction",
+        absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
+                      wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimisation des hypers paramètres"))),
+                                sliderInput("nTabs", "", min=3, max=20, value=5)
+                                )
+                      ),
+        sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel('Prédictions selon le modèle créer','Carte de Paris avec la création',uiOutput('mytabs')))
+        ),
+    
+    tabPanel(
+        title="Jeu",
+        absolutePanel(bottom=-5, left=15, width = '32%',fixed = TRUE,style = "opacity: 0.92;z-index: 10;",
+                      wellPanel(
+                          HTML('<button data-toggle="collapse" data-target="#demo"><i class="fa fa-bar-chart" ></i></button> Voir Les consignes'),
+                          tags$div(id = 'demo',  class="collapse",
+                          HTML(markdownToHTML(fragment.only=TRUE, file='JeuConsigne.md'))
+                                ))
+        ),
+        sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu', actionButton("btn_game", "Nouvel Individus")),
+                      mainPanel(
+                          absolutePanel(top=80, right=20, width = '32%',fixed = TRUE,style =" color:#fff;z-index: 10;",
+                                        wellPanel(style = "background: #27ae60;opacity:0.80;",'hello')
+                          ),
+                          leafletOutput("mymap",height = '100vh')))
+    )
+ )
+)
 

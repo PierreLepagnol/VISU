@@ -5,14 +5,15 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,warning=FALSE)
+knitr::opts_chunk$set(echo = FALSE,warning=FALSE,eval=FALSE)
 library(DataExplorer)
 library(tidyverse)
 # 
 # params$title
 # read_delim('/home/pierre/Documents/School/S2/Data Viz/Tuto2/tauxchomage.csv',';') 
+# donnee=read_csv('../DataViz.csv')
 donnee=params$mesdata
-# read_csv('./datavizfin.csv')
+#
 ```
 
 ## Présentation du jeu de données :
@@ -27,8 +28,8 @@ eval_na=as.logical(intro$rows-intro$complete_rows)
 plot_intro(donnee)
 ```
 
-`r if (eval_na) '# Données manquantes'`
-```{r eval=eval_na}
+`r if (FALSE) '# Données manquantes'`
+```{r eval=FALSE}
 incProgress(1/10,message = 'Représentation des données manquantes', detail = 'knitr')
 plot_missing(donnee)
 ```
@@ -37,7 +38,6 @@ plot_missing(donnee)
 ```{r}
 #Dans tout les Chunks incProgress indique la progression à l'utilisateur
 incProgress(1/10,message = 'Création des Barplot & Histogrammes', detail = 'kniting')
-
 Barplot=plot_bar(donnee)
 Histo=plot_histogram(donnee)
 ```
@@ -48,16 +48,18 @@ Histo=plot_histogram(donnee)
 incProgress(1/10,message = 'Création des QQ-plots', detail = 'kniting')
 qq_data <- donnee
 qqp=plot_qq(qq_data, sampled_rows = 1000L)
-qqp
 ```
 
 ### Matrice des corrélations
 ```{r}
 #Dans tout les Chunks incProgress indique la progression à l'utilisateur
 incProgress(1/10,message = 'Création de la matrice des corrélations', detail = 'kniting')
-plot_correlation(donnee)
+donnee2=donnee %>% select_if(is.numeric)
+corrmat<-cor(donnee2)
+library(reshape2)
+melted_cormat <- melt(corrmat)
+melted_cormat %>% ggplot()+aes(x=Var1, y=Var2, fill=value)+geom_raster()+ scale_fill_gradient2(low = "blue", high = "red",name="Correlation\nde Pearson")
 ```
-
 
 `r if (params$PCA) '# ACP'`
 ```{r, eval=params$PCA}
@@ -66,9 +68,22 @@ incProgress(1/10,message = 'ACP', detail = 'kniting')
 dat=donnee %>% select(-all_of(colnames(donnee)[(sapply(donnee, class)!="numeric")]))
 plot_prcomp( na.omit(dat), variance_cap = 0.8, nrow = 2L, ncol = 2L)
 ```
-## Modèle : 
 
-## 
+<!-- Titre conditionel selon le nombre de modèles séléctionnés -->
+`r if (length(params$mesmodeles)>1) '# Modèles :' else '## Modèle :'`
+
+```{r pressure,fig.width=6,echo=FALSE,message=FALSE,results="asis",eval=TRUE}
+namesMod=names(params$mesmodeles)
+namesMod %>% length() %>% print()
+for(Model in 1:length(params$mesmodeles)) {
+  cat("\n##",  Model,"\n")
+  plot(x =1:5,y=1:5) 
+  # cat('\n',1:5,'\n')
+  # plot(x =1:5,y=1:5)
+  # cat("  \n")
+  # incProgress(1/length(params$mesmodeles),message = 'helloooo', detail = 'kniting')
+}
+```
 
 
 ## Tests sur les hypothèses
