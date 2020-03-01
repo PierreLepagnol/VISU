@@ -1,7 +1,10 @@
 library(shiny)
-library(readr)
+
 library(DT)
 library(leaflet)
+library(rlang)
+library(tidyverse)
+library(caret)
 
 geocodeGratuit <- function(adresses){
   # adresses est un vecteur contenant toutes les adresses sous forme de chaine de caracteres
@@ -31,19 +34,24 @@ shinyServer(function(session,input, output) {
         req(input$file1,input$separator) # Nécessite les 2 Variables : file1 & separator 
         tryCatch({data=read_delim(input$file1$datapath,delim=input$separator)},
                   error = function(e) {# return a safeError if a parsing error occurs
-                        stop(safeError(e))})
+                    stop(safeError(e))})
         })
     
     Algo_List= reactive({
-      req(input$TypeMod) # Nécessite les 1 Variable : TypeMod 
+      req(input$TypeMod)
       if(input$TypeMod=='Régression'){
         # Listes des Méthodes / Algo : Regression
-        return(list('LM','GLM','Algo_3'))
+        return(list('LM','GLM'))
       }
       if(input$TypeMod=='Classifcation'){
         # Listes des Méthodes / Algo : Classifcation
-        return(list('GLM','Algo_3','dfghjk'))
+        return(list('lda (Linear Discriminant Analysis)','qda (Quadratic Discriminant Analysis)','knn (K-Nearest Neighbors)','rpart (Decision Tree)','rf (RandomForest)'))
       }
+    })
+    
+    Valid_Method=reactive({
+      req(input$TypeValid)
+      print(input$TypeValid)
     })
     
     
@@ -66,38 +74,73 @@ shinyServer(function(session,input, output) {
     })
     
     
-    
-    TestMethod=Algo_List= reactive({
-      req(input$TypeMod)
-      if(input$TypeMod=='Régression'){
-        # Listes des Méthodes / Algo : Regression
-        return(list('LM','GLM'))
-      }
-      if(input$TypeMod=='Classifcation'){
-        # Listes des Méthodes / Algo : Classifcation
-        return(list('lda','qda','knn','rpart','RandomForest'))
-      }
-    })
-    
-    # Mett a jour le nombre de tab panel
-    output$TabsPred = renderUI({
+    Train_n_Test_model=function(model_str,MethodValidation){
+      model_name=str_split(model_str, ' ', n = Inf, simplify = FALSE)[[1]][1]
       
+      ctrl1 <- trainControl(method="cv",number=10,index=list(indapp))
+      KK <- data.frame(k=k_cand)
+      ee1 <- train(Y~.,data=donnees,method="knn",trControl=ctrl1,tuneGrid=KK)
+      ee1
+       return(model_name)
+    }
+    
+    
+    # Met à jour le nombre de tab panel
+    output$TabsPred = renderUI({
+      Valid_Method()
+      
+      
+      Algo_Result=map(input$AlgoInput,~Train_n_Test_model(.x,input$TypeValid))
       nTabs = length(input$AlgoInput)
+      
       myTabs = lapply(1:nTabs, function(x){
-          tabPanel(title=input$AlgoInput[x], input$AlgoInput[x] 
+          tabPanel(title=input$AlgoInput[x],Algo_name[x]
                    )
         });
       do.call(tabsetPanel, myTabs)
-      
     })
-    stringTargetVar=reactiveValues()
+    
     output$mymap <- renderLeaflet({
       Paris <- geocodeGratuit("paris")
       data=datasetInput()
       m=leaflet(data) %>% setView(lng = Paris[1], lat = Paris[2], zoom = 12) %>% addTiles() %>% addProviderTiles(providers$CartoDB.Positron, options = providerTileOptions(noWrap = TRUE))
-      
-      m %>% addMarkers(lng = ~lon, lat = ~lat,popup ='dfgh', label =~input$TargetVar )
+      m %>% addMarkers(lng = ~lon, lat = ~lat,popup ='Veuillez construire un modèle.', label ='Veuillez construire un modèle.' )
     })
+    
+    # Observe le changement de variable : TargetVar
+    
+    observeEvent(input$TargetVar, {
+      leafletProxy(mapId = "mymap",session = session,data = datarefactored_poopup()) %>%clearMarkers() %>%addMarkers(lng = ~lon, lat = ~lat, popup=~poopup,label =~get(input$TargetVar))
+      }
+    )
+    
+    # Observe le changement de variable : ExpVar
+    observeEvent(input$ExpVar, {
+      leafletProxy(mapId = "mymap",session = session,data = datarefactored_poopup()) %>%clearMarkers() %>%addMarkers(lng = ~lon, lat = ~lat, popup=~poopup,label =~get(input$TargetVar))
+    }
+    )
+    
+    datarefactored_poopup=reactive({
+      req(input$ExpVar,input$TargetVar)
+      vect_name=unlist(input$ExpVar)
+      dataset=Poopup_refactor(datasetInput(),vect_name,input$TargetVar)
+    })
+    
+    Poopup_refactor=function(dataset_raw,vect_name,targetvar){
+      # Selection des variables pertinantes
+      dataset2=dataset_raw %>% select(vect_name)
+      # Ajout du nom de la variable pour chaque ligne
+      dataset2[] <- Map(paste, names(dataset2), dataset2, sep = ' : ')
+      # création du popup
+      dataset_raw$poopup <- apply( dataset2[ , vect_name] , 1 , FUN= paste,collapse = "<br/>" )
+      # Selection des variables utiles à leaflet
+      newDs=dataset_raw %>% select(lon,lat,poopup,targetvar)
+      return(newDs)
+    }
+    
+    
+    
+    
     
   #  TargetVarGAME=observe(input$TargetVar,input$TargetVar)
     

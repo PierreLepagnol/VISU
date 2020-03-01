@@ -25,6 +25,7 @@ shinyUI(
              sidebarLayout(
                  sidebarPanel(
                      # Importation
+                     actionButton("button", "Show"),
                      tags$h2("Importation"),
                      fileInput("file1", "Choisir un fichier",multiple = FALSE,accept = c("text/csv","text/comma-separated-values,text/plain",".csv"),buttonLabel = "Chercher un dataset", placeholder = "Aucun fichier sélectionné"),
                      textInput('separator','Séparateur',value=",",placeholder = "Par défaut : virgule"),
@@ -47,7 +48,7 @@ shinyUI(
     tabPanel("Modélisation",
              splitLayout(
                 wellPanel(
-                    splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choices = c('Train/Test Validation','CrossValidation')),
+                    splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choiceNames = c('Train/Test Validation','CrossValidation','Bootstrap'), choiceValues = c('LCV','cv','boot')),
                                 sliderInput('SliderFold', label='Nombre de blocs :',min=1,max=80,value = 20,)
                         ),
                         splitLayout(
@@ -72,7 +73,7 @@ shinyUI(
                                 sliderInput("nTabs", "", min=3, max=20, value=5)
                                 )
                       ),
-        sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel('Prédictions selon le modèle créer','Carte de Paris avec la création',uiOutput('mytabs')))
+        sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel('Prédictions selon le modèle créer','Carte de Paris avec la création',uiOutput('TabsPred')))
         ),
     
     tabPanel(
