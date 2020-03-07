@@ -1,18 +1,22 @@
 ---
-title: Hello
+title: "hello"
 date:  "`r format(Sys.time(), '%d %B %Y')`"
 output: pdf_document
 ---
-
+<!-- params$title -->
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,warning=FALSE,eval=FALSE)
+library(knitr)
+opts_chunk$set(echo = FALSE,warning=FALSE,eval=F)
 library(DataExplorer)
 library(tidyverse)
+
+setwd("~/Documents/School/S2/Data Viz/VISU/Shiny")
+
 # 
 # params$title
 # read_delim('/home/pierre/Documents/School/S2/Data Viz/Tuto2/tauxchomage.csv',';') 
 # donnee=read_csv('../DataViz.csv')
-donnee=params$mesdata
+# donnee=params$mesdata
 #
 ```
 
@@ -61,8 +65,9 @@ melted_cormat <- melt(corrmat)
 melted_cormat %>% ggplot()+aes(x=Var1, y=Var2, fill=value)+geom_raster()+ scale_fill_gradient2(low = "blue", high = "red",name="Correlation\nde Pearson")
 ```
 
-`r if (params$PCA) '# ACP'`
-```{r, eval=params$PCA}
+`r if (FALSE) '# ACP'`
+<!-- params$PCA=F -->
+```{r, eval=FALSE}
 incProgress(1/10,message = 'ACP', detail = 'kniting')
 
 dat=donnee %>% select(-all_of(colnames(donnee)[(sapply(donnee, class)!="numeric")]))
@@ -70,24 +75,25 @@ plot_prcomp( na.omit(dat), variance_cap = 0.8, nrow = 2L, ncol = 2L)
 ```
 
 <!-- Titre conditionel selon le nombre de modèles séléctionnés -->
-`r if (length(params$mesmodeles)>1) '# Modèles :' else '## Modèle :'`
+`r if (length(list('Knn','jk'))>1) '# Modèles :' else '## Modèle :'`
+<!-- params$mesmodeles -->
 
-```{r pressure,fig.width=6,echo=FALSE,message=FALSE,results="asis",eval=TRUE}
-namesMod=names(params$mesmodeles)
-namesMod %>% length() %>% print()
-for(Model in 1:length(params$mesmodeles)) {
-  cat("\n##",  Model,"\n")
-  plot(x =1:5,y=1:5) 
-  # cat('\n',1:5,'\n')
-  # plot(x =1:5,y=1:5)
-  # cat("  \n")
-  # incProgress(1/length(params$mesmodeles),message = 'helloooo', detail = 'kniting')
+```{r,child='child.Rmd',eval=T}
+
+```
+
+
+```{r echo=T,eval=TRUE}
+namesMod=names(list('Knn','jk'))
+
+for(Model in 1:length(namesMod)) {
+out=knit_expand(file = "./child.Rmd", value.to.match = as.character(Model))
+cat(knit(text = out), collapse = '\n')
 }
+
 ```
 
 
 ## Tests sur les hypothèses
-```{r echo=FALSE}
 
-```
 

@@ -1,0 +1,151 @@
+---
+title: "Projet Visualisation"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    # orientation: rows
+    vertical_layout: fill
+    runtime: shiny
+    # css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE)
+library(flexdashboard)
+library(tidyverse)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(rAmCharts)
+library(shiny)
+library(ggmap)
+library(leaflet)
+library(purrr)
+library(graphics)
+library(shiny)
+
+donnee=read_csv('../DataViz.csv')
+```
+
+Données
+====================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Tableau
+
+```{r}
+datatable(data=donnee,options=list(width=150,scrollX=TRUE,scrollY=TRUE,scroller=TRUE))
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Carte
+
+```{r }
+
+# Carte 
+# Assets 
+icone <- makeIcon(iconUrl = "https://www.stickpng.com/assets/thumbs/588a6708d06f6719692a2d20.png", iconWidth = 20, iconHeight = 20)
+
+centreCarte=c(mean(donnee$lon),mean(donnee$lat))
+
+description <- paste(sep = "<br/>","type de bien :", donnee$type, "<b>",  "prix :", donnee$prix, "<b>", "surface :", donnee$surface, "<b>", "pièces :", donnee$nb_pieces, "<b>", "Site :", donnee$url)
+
+
+# Construction de la carte
+carte <-  leaflet(data=donnee) %>% setView(lng = centreCarte[1], lat = centreCarte[2], zoom = 12) %>% addTiles()
+
+# Ajout Des markers
+carte %>% addMarkers(~lon, ~lat, popup = ~description, icon=icone)
+```
+
+
+Graphiques {data-orientation=rows}
+====================================
+
+Column {.tabset data-width=550}
+-------------------------------------
+
+### Boxplot maison/appartement
+
+```{r}
+names(d) <- c("type_bien","prix")
+d1=donnee %>% select(type,prix)
+
+u <- ggplot(d1)+aes(x=type,y=prix)+geom_boxplot(fill=c("cadetblue1","antiquewhite3"))+theme_bw()
+
+ggplotly(u)
+
+```
+
+### Boxplot chambre/studio
+
+```{r}
+d2 <- filter(d,type_bien=="chambre" | type_bien=="studio")
+
+u1 <- ggplot(d2)+aes(x=type_bien,y=prix)+geom_boxplot(fill=c("cadetblue1","antiquewhite3"))+theme_bw()
+ggplotly(u1)
+```
+
+### Histogramme
+
+```{r}
+amHist(donnee$prix,col="lightgreen",border="green",main="Histogramme du prix", xlab="prix",ylab="fréquence")
+
+```
+
+### Nuage de points   
+
+```{r}
+u4 <- ggplot(donnee)+aes(x=surface,y=prix,color=type)+geom_point()
+ggplotly(u4)
+```
+
+### Barplot 
+
+```{r}
+barplot <- ggplot(donnee)+aes(x=nb_pieces,fill=type)+geom_bar()+geom_text(aes(label=..count..),stat="count",position=position_stack(0.5))+labs(x="nombre de pieces",y="effectif")
+ggplotly(barplot)
+```
+
+
+Régression  
+====================================
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Régression sur le prix : coefficients 
+
+```{r}
+reg <- lm(prix~nb_pieces+nb_chambres+surface,)
+summary(reg)
+knitr::kable(coef(reg))
+```
+
+Column {.tabset data-width=550}
+-------------------------------------
+
+### Résidus 
+
+```{r}
+residu <- rstudent(reg)
+amPlot(x=residu,y=$prix)
+```
+
+
+### Observation graphique
+
+```{r}
+#u4 <- ggplot(data)+aes(x=nb_photo+nb_pieces+nb_chambres+surface,y=prix)+geom_point(size=1,fill="cadetblue2",color="cadetblue3")+geom_smooth(method="lm",color="cadetblue4",fill="antiquewhite1")+geom_segment(aes(xend=nb_photo+nb_pieces+nb_chambres+surface,yend=fit),fill="cadetblue3",color="cadetblue3")
+#ggplotly(u4)
+
+u4 <- ggplot()+aes(x=nb_photo+nb_pieces+nb_chambres+surface,y=prix)+geom_point(size=1,fill="cadetblue2",color="cadetblue3")+geom_smooth(method="lm",color="cadetblue4",fill="antiquewhite1")+theme_minimal()+ggtitle("Régression linéaire sur le prix")
+ggplotly(u4)
+```
+
+
+

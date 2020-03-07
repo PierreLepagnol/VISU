@@ -1,0 +1,24 @@
+---
+title: "Notice d'utilisation"
+author: "Pierre LEPAGNOL"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(emo)
+```
+
+# Principe de l'application
+
+Explication du principe de l'app.
+
+# Les différents onglets :
+## Importation / Exportation
+
+## Modélisation
+
+## Prédiction
+
+## Jeu
