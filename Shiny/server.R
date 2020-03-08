@@ -77,10 +77,7 @@ shinyServer(function(session, input, output) {
     Algo$model_name= str_split(input$AlgoInput, ' ',n = Inf, simplify = FALSE)[[1]][1]
     }) 
   
-  observeEvent({input$TypeValid},{
-    Algo$TypeValid= input$AlgoInput
-  }) 
-  
+
   ## Observation du boutton runModels : Ajustement du modèle ####
   observeEvent({input$runModels},{
     # Récuperer les valeurs de l'Algo créé.
@@ -88,22 +85,39 @@ shinyServer(function(session, input, output) {
     sequence=seq.int(from=1, to=length(TuneParams$parameter), by=1)
     
     Algo$TuneParams=map2(sequence,TuneParams$parameter,function(x,y) list('name'=as.character(y),'value'=input[[paste0("TuneParams",x)]]) )
-    # Algo$model=Train_n_Test_model(Algo$model_name,,Algo$TuneParams)
+    formule=createFormula(input$TargetVar,input$ExpVar)
+    Algo$model=Train_n_Test_model(Algo$model_name,input$AlgoInput,input$ValidValue,Algo$TuneParams,input$TargetVar,input$ExpVar,formule)
   })
   
   
-  ## Train_n_Test_model ####
-  Train_n_Test_model = function(model_str, MethodValidation,TuneParams) {
-    
-    
-    ctrl1 <-trainControl(method = MethodValidation,number = 10,index = list(indapp))
+  createFormula=function(TargetVar,ExpVar){
+    if(is.null(ExpVar)){ ExpVar='.' }
+    form=paste0(TargetVar,"~.")
+    return(as.formula(form))
+  }
   
-    TuneGrid_List <- data.frame(k = k_cand)
+  ## Train_n_Test_model ####
+  Train_n_Test_model = function(model_str,MethodValidation,ValidValue,TuneParams,TargetVar,ExpVar,FORMU) {
     
-    ee1 <-train(Y ~ .,data = donnees,method = "knn",trControl = ctrl1,tuneGrid = TuneGrid_List)
+    donnees=datasetInput() %>% select(TargetVar,ExpVar)
+    indapp=sample(1:nrow(donnees)) 
+    
+    if(is.null(TuneParams[[1]]$value[1])){
+      # Modèles ne nécéssitant pas de TuneParams 
+      print(model_str)
+      ctrl1=trainControl(method="cv",
+                         number = 5,
+                         repeats = 5) 
+        # -trainControl(method = MethodValidation,number = ValidValue,index = list(indapp))
+      ee1 <-train(FORMU,data = donnees,method = model_str,trControl = ctrl1,verboseIter = TRUE)
+      
+      }else{
+        k_cand=seq.int(from=TuneParams[[1]]$value[1], to=TuneParams[[1]]$value[2])
+        TuneGrid_List <- data.frame(k = k_cand)
+    ee1 <-train(FORMU,data =donnees,method = model_str,trControl = ctrl1,tuneGrid = TuneGrid_List)
+        }
 
-    ee1
-    return(model_name)
+    return(ee1)
   }
   
   
@@ -120,7 +134,7 @@ shinyServer(function(session, input, output) {
     if (param=='parameter'){return()}
     return(switch(as.character(class),
            "character"=textInput(paste0("TuneParams",i), label,value =NULL),
-           "numeric"=sliderInput(paste0("TuneParams",i),paste(label,param,sep=' : '),min=0,max=10,value=c(0,1000))))
+           "numeric"=sliderInput(paste0("TuneParams",i),paste(label,param,sep=' : '),min=1,max=100,value=c(1,10))))
   }
   
   ## Render UI : Interface des Tunning Parameters ####
@@ -145,8 +159,13 @@ shinyServer(function(session, input, output) {
   })
   
   
-  output$ModelText <- renderPrint({
-    
+  
+  output$TunningModel <- renderPrint({
+    Algo$model
+  })
+  
+  output$FinalModel <- renderPrint({
+    Algo$model$finalModel
   })
   
   ## Creation de la carte ####

@@ -72,12 +72,7 @@ shinyUI(
                           )
                           ),
                  tabPanel(paste("Prédiction",emo::ji("1st_place_medal")),
-                          absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
-                                        wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimisation des hypers paramètres"))),
-                                                  sliderInput("nTabs", "", min=3, max=20, value=5)
-                                        )
-                          ),
-                          sidebarLayout(sidebarPanel(verbatimTextOutput('ModelText', placeholder = FALSE)),mainPanel(uiOutput('TabsPred')))
+                          splitLayout(verbatimTextOutput('TunningModel', placeholder = FALSE),verbatimTextOutput('FinalModel', placeholder = FALSE))
                           ),
                  id = 'TabmOd',type='tabs' )
              ),
