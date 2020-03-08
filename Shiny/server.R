@@ -19,9 +19,6 @@ shinyServer(function(session, input, output) {
       stop(safeError(e))
     })
   })
-  
-  
-  
   ## Listes des algorithmes disponibles####
   Algo_List = reactive({
     req(input$TypeMod)
@@ -37,21 +34,15 @@ shinyServer(function(session, input, output) {
           'qda (Quadratic Discriminant Analysis)',
           'knn (K-Nearest Neighbors)',
           'rpart (Decision Tree)',
-          'rf (RandomForest)'
+          'rf (RandomForest)',
+          'adaboost (adaptative boosting)'
         )
       )
     }
   })
   
   
-  ## Listes des méthodes de validation disponibles####
-  Valid_Method = reactive({
-    req(input$TypeValid)
-    print(input$TypeValid)
-  })
-  
-
-  ##Impression du Dataset####
+  ## Impression du Dataset####
   output$mydataset = renderDataTable(DT::datatable(
     datasetInput(),
     options = list(
@@ -71,6 +62,7 @@ shinyServer(function(session, input, output) {
     updateSelectInput(session, "TargetVar", choices = vchoices)
     updateCheckboxGroupInput(session, "ExpVar", choices = vchoices)
   })
+ 
   ## Observation de la Variable Algo_List ####  
   observe({
     AlgoChoices <- Algo_List()
@@ -78,23 +70,33 @@ shinyServer(function(session, input, output) {
   })
   
   
-  Algo_Result=reactiveValues()
   
-  Validation=reactiveValues()
+  ## Observation du boutton AlgoInput : Recuperation du nom du modèle ####
+  Algo=reactiveValues()
+  observeEvent({input$AlgoInput},{
+    Algo$model_name= str_split(input$AlgoInput, ' ',n = Inf, simplify = FALSE)[[1]][1]
+    }) 
   
-  observeEvent({input$AlgoInput},{Algo_Result$model_name= str_split(input$AlgoInput, ' ',n = Inf, simplify = FALSE)[[1]][1]}) 
+  observeEvent({input$TypeValid},{
+    Algo$TypeValid= input$AlgoInput
+  }) 
   
+  ## Observation du boutton runModels : Ajustement du modèle ####
   observeEvent({input$runModels},{
-    TuneParams=getTuneParams(model_name)
-    # Algo_Result$results=Train_n_Test_model()
+    # Récuperer les valeurs de l'Algo créé.
+    TuneParams=getTuneParams(Algo$model_name)
+    sequence=seq.int(from=1, to=length(TuneParams$parameter), by=1)
+    
+    Algo$TuneParams=map2(sequence,TuneParams$parameter,function(x,y) list('name'=as.character(y),'value'=input[[paste0("TuneParams",x)]]) )
+    # Algo$model=Train_n_Test_model(Algo$model_name,,Algo$TuneParams)
   })
+  
   
   ## Train_n_Test_model ####
   Train_n_Test_model = function(model_str, MethodValidation,TuneParams) {
-    TuneParams
+    
     
     ctrl1 <-trainControl(method = MethodValidation,number = 10,index = list(indapp))
-    parameter_to_tune=caret::getModelInfo(model=model_name)$parameters
   
     TuneGrid_List <- data.frame(k = k_cand)
     
@@ -109,76 +111,43 @@ shinyServer(function(session, input, output) {
   getTuneParams=function(model_name){
     model_params=getModelInfo(model=model_name,regex = FALSE)[[1]]
     model_params=model_params$parameters
-    print(model_params)
-    return('heloo')
+    return(model_params)
   }
 
+ 
+   ## Function ==> liste de slider par paramètres ####
+  selectUiComp=function(param,class,label,i){
+    if (param=='parameter'){return()}
+    return(switch(as.character(class),
+           "character"=textInput(paste0("TuneParams",i), label,value =NULL),
+           "numeric"=sliderInput(paste0("TuneParams",i),paste(label,param,sep=' : '),min=0,max=10,value=c(0,1000))))
+  }
   
+  ## Render UI : Interface des Tunning Parameters ####
   output$TunningParams <- renderUI({
-    if (is.null(Algo_Result$model_name))
-      return()
+    # Si Aucun Modèle selectionné ==> Affichage d'aucun components
+    if (is.null(Algo$model_name)){return()}
+    else{
+      TuneParams=getTuneParams(Algo$model_name)
+      sequence=seq.int(from=1, to=length(TuneParams$parameter), by=1)
+      liste_UI=pmap(list(as.vector(TuneParams$parameter),as.vector(TuneParams$class),as.vector(TuneParams$label),sequence),selectUiComp)
+    }
+    liste_UI
+  })
+  
+  output$ValidParams= renderUI({
+    switch(input$TypeValid,
+           'boot'=sliderInput('ValidValue', label='Nombre de Echantillons Bootstrap : ',min=1,max=80,value=20),
+           'cv'=sliderInput('ValidValue', label='Nombre de blocs : ',min=1,max=80,value=20),
+           'LCV'=sliderInput('ValidValue', label='Pourcentage du Dataset pour l\'apprentisage',min=1,max=100,value=70)
+           )
     
-    # Depending on input$input_type, we'll generate a different
-    # UI component and send it to the client.
-    switch(Algo_Result$model_name,
-           "lda" = sliderInput("dynamic", "Dynamic",
-                                  min = 1, max = 20, value = c(10,12)),
-           "knn" = list(textInput("dynamic", "Dynamic",
-                              value = "starting value"),textInput("dynamic", "Dynamic",
-                                                                  value = "starting value")),
-           "numeric" =  numericInput("dynamic", "Dynamic",
-                                     value = 12),
-           "checkbox" = checkboxInput("dynamic", "Dynamic",
-                                      value = TRUE),
-           "checkboxGroup" = checkboxGroupInput("dynamic", "Dynamic",
-                                                choices = c("Option 1" = "option1",
-                                                            "Option 2" = "option2"),
-                                                selected = "option2"
-           ),
-           "radioButtons" = radioButtons("dynamic", "Dynamic",
-                                         choices = c("Option 1" = "option1",
-                                                     "Option 2" = "option2"),
-                                         selected = "option2"
-           ),
-           "selectInput" = selectInput("dynamic", "Dynamic",
-                                       choices = c("Option 1" = "option1",
-                                                   "Option 2" = "option2"),
-                                       selected = "option2"
-           ),
-           "selectInput (multi)" = selectInput("dynamic", "Dynamic",
-                                               choices = c("Option 1" = "option1",
-                                                           "Option 2" = "option2"),
-                                               selected = c("option1", "option2"),
-                                               multiple = TRUE
-           ),
-           "date" = dateInput("dynamic", "Dynamic"),
-           "daterange" = dateRangeInput("dynamic", "Dynamic")
-    )
   })
   
   
-  
-  output$TabsPred = renderUI({
-    nTabs = length(input$AlgoInput)
+  output$ModelText <- renderPrint({
     
-    myTabs = lapply(1:nTabs, function(x) {
-      tabPanel(title = input$AlgoInput[x], Algo_Result$results[x])
-    })
-    
-    do.call(tabsetPanel, myTabs)
   })
-  
-  ## Met à jour le nombre de tab panel ####
-  output$TabsPred = renderUI({
-    nTabs = length(input$AlgoInput)
-  
-    myTabs = lapply(1:nTabs, function(x) {
-      tabPanel(title = input$AlgoInput[x], Algo_Result$results[x])
-    })
-    
-    do.call(tabsetPanel, myTabs)
-  })
-  
   
   ## Creation de la carte ####
   output$mymap <- renderLeaflet({

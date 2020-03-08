@@ -45,40 +45,43 @@ shinyUI(
     # Onglet : Modélisation
         # Création de différents modèles à inclure dans le rapport
     
-    tabPanel(paste("Modélisation",emo::ji("hammer_and_wrench")),
-             splitLayout(
-                wellPanel(
-                    splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choiceNames = c('Train/Test Validation','CrossValidation','Bootstrap'), choiceValues = c('LCV','cv','boot')),
-                                sliderInput('SliderFold', label='Nombre de blocs :',min=1,max=80,value = 20,)
-                        ),
-                        splitLayout(
-                            # Selection du type de problème
-                        radioButtons('TypeMod', label='Choisir le type de problème :', choices = c('Classifcation','Régression'),selected ='Régression'),
-                            # Panneau Choix Algo
-                        radioButtons("AlgoInput", "Méthode",choices = c(''),selected=NULL)
-                     ),
-                    uiOutput("TunningParams"),
-                        actionButton("runModels", "Ajuster les modèles")
-                    ),
-                    wellPanel(tweaks,
-                              list(h3("Sélection des variables"),
-                                   span(style="color:red", 'Uniquement Variables Numériques'),
-                                   selectizeInput("TargetVar","Variable Cible", choices = NULL, options = list(placeholder = "Télécharger un jeu de données")),
-                                   tags$div(align = 'left',class = 'multicol',
-                                            checkboxGroupInput('ExpVar',"Variables Explicatives", list("Télécharger un jeu de données"=NULL),inline   = FALSE)))
+    tabPanel(paste("Modélisation",emo::ji("hammer_and_wrench"),' / ',"Prédiction",emo::ji("1st_place_medal")),
+             tabsetPanel(
+                 tabPanel(title=paste("Modélisation",emo::ji("hammer_and_wrench")), 
+                          splitLayout(
+                              wellPanel(
+                                  splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choiceNames = c('Train/Test Validation','CrossValidation','Bootstrap'), choiceValues = c('LCV','cv','boot')),
+                                              uiOutput("ValidParams")
+                                  ),
+                                  splitLayout(
+                                      # Selection du type de problème
+                                      radioButtons('TypeMod', label='Choisir le type de problème :', choices = c('Classifcation','Régression'),selected ='Régression'),
+                                      # Panneau Choix Algo
+                                      radioButtons("AlgoInput", "Méthode",choices = c(''),selected=NULL)
+                                  ),
+                                  uiOutput("TunningParams"),
+                                  actionButton("runModels", "Ajuster les modèles")
+                              ),
+                              wellPanel(tweaks,
+                                        list(h3("Sélection des variables"),
+                                             span(style="color:red", 'Uniquement Variables Numériques'),
+                                             selectizeInput("TargetVar","Variable Cible", choices = NULL, options = list(placeholder = "Télécharger un jeu de données")),
+                                             tags$div(align = 'left',class = 'multicol',
+                                                      checkboxGroupInput('ExpVar',"Variables Explicatives", list("Télécharger un jeu de données"=NULL),inline   = FALSE)))
                               )
-                )
+                          )
+                          ),
+                 tabPanel(paste("Prédiction",emo::ji("1st_place_medal")),
+                          absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
+                                        wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimisation des hypers paramètres"))),
+                                                  sliderInput("nTabs", "", min=3, max=20, value=5)
+                                        )
+                          ),
+                          sidebarLayout(sidebarPanel(verbatimTextOutput('ModelText', placeholder = FALSE)),mainPanel(uiOutput('TabsPred')))
+                          ),
+                 id = 'TabmOd',type='tabs' )
              ),
-    
-    tabPanel(
-        title=paste("Prédiction",emo::ji("1st_place_medal")),
-        absolutePanel(bottom = 20, right = 20, width = 500,draggable = TRUE,style = "opacity: 0.92",
-                      wellPanel(HTML(markdownToHTML(fragment.only=TRUE, text=c("Panneau optimisation des hypers paramètres"))),
-                                sliderInput("nTabs", "", min=3, max=20, value=5)
-                                )
-                      ),
-        sidebarLayout(sidebarPanel('Panneau pour créer un nouvel individu'),mainPanel(uiOutput('TabsPred')))
-        ),
+
     
     tabPanel(
         title=paste("Jeu",emo::ji("video_game")),
