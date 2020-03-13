@@ -50,7 +50,7 @@ shinyUI(
                  tabPanel(title=paste("Modélisation",emo::ji("hammer_and_wrench")), 
                           splitLayout(
                               wellPanel(
-                                  splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choiceNames = c('Train/Test Validation','CrossValidation','Bootstrap'), choiceValues = c('LCV','cv','boot')),
+                                  splitLayout(radioButtons('TypeValid', label='Choisir le type de Validation :', choiceNames = c('Aucun','CrossValidation','Bootstrap'), choiceValues = c('none','cv','boot'),selected='cv'),
                                               uiOutput("ValidParams")
                                   ),
                                   splitLayout(
@@ -60,20 +60,31 @@ shinyUI(
                                       radioButtons("AlgoInput", "Méthode",choices = c(''),selected=NULL)
                                   ),
                                   uiOutput("TunningParams"),
-                                  actionButton("runModels", "Ajuster les modèles")
+                                  actionButton("runModels", "Ajuster les modèles"),
+                                  HTML('<button data-toggle="collapse" data-target="#demo"><i class="fa fa-exclamation-triangle" ></i></button> Recommendations'),
+                                      tags$div(id = 'demo',  class="collapse",
+                                               HTML(markdownToHTML(fragment.only=TRUE, file='WarningFittingMod.md'))
+                                      )
                               ),
                               wellPanel(tweaks,
                                         list(h3("Sélection des variables"),
-                                             span(style="color:red", 'Uniquement Variables Numériques'),
+                                             span(style="color:#e74c3c", 'Attention aux types des variables !'),
                                              selectizeInput("TargetVar","Variable Cible", choices = NULL, options = list(placeholder = "Télécharger un jeu de données")),
                                              tags$div(align = 'left',class = 'multicol',
                                                       checkboxGroupInput('ExpVar',"Variables Explicatives", list("Télécharger un jeu de données"=NULL),inline   = FALSE)))
                               )
-                          )
                           ),
-                 tabPanel(paste("Prédiction",emo::ji("1st_place_medal")),
+                          absolutePanel(bottom=-5, left=15, width = '32%',fixed = TRUE,style = "opacity: 0.92;z-index: 10;",
+                                        
+                          )
+                          
+                ),
+                 tabPanel(title=paste("Prédiction",emo::ji("1st_place_medal")),
                           splitLayout(verbatimTextOutput('TunningModel', placeholder = FALSE),verbatimTextOutput('FinalModel', placeholder = FALSE))
                           ),
+                 tabPanel(title=paste("Graphes",emo::ji("bar_chart")),
+                          flowLayout(uiOutput("Graphs")),
+                 ),
                  id = 'TabmOd',type='tabs' )
              ),
 
@@ -82,8 +93,8 @@ shinyUI(
         title=paste("Jeu",emo::ji("video_game")),
         absolutePanel(bottom=-5, left=15, width = '32%',fixed = TRUE,style = "opacity: 0.92;z-index: 10;",
                       wellPanel(
-                          HTML('<button data-toggle="collapse" data-target="#demo"><i class="fa fa-bar-chart" ></i></button> Voir Les consignes'),
-                          tags$div(id = 'demo',  class="collapse",
+                          HTML('<button data-toggle="collapse" data-target="#game"><i class="fa fa-bar-chart" ></i></button> Voir Les consignes'),
+                          tags$div(id = 'game',  class="collapse",
                           HTML(markdownToHTML(fragment.only=TRUE, file='JeuConsigne.md'))
                                 ))
         ),

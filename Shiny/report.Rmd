@@ -78,16 +78,11 @@ plot_prcomp( na.omit(dat), variance_cap = 0.8, nrow = 2L, ncol = 2L)
 `r if (length(list('Knn','jk'))>1) '# Modèles :' else '## Modèle :'`
 <!-- params$mesmodeles -->
 
-```{r,child='child.Rmd',eval=T}
-
-```
-
-
-```{r echo=T,eval=TRUE}
+```{r echo=T,eval=FALSE}
 namesMod=names(list('Knn','jk'))
 
 for(Model in 1:length(namesMod)) {
-out=knit_expand(file = "./child.Rmd", value.to.match = as.character(Model))
+#1out=knit_expand(file = "./howto.Rmd", value.to.match = as.character(Model))
 cat(knit(text = out), collapse = '\n')
 }
 

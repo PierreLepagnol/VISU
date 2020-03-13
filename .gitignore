@@ -45,6 +45,7 @@ vignettes/*.pdf
 # R package: bookdown caching files
 /*_files/
 
-*/test.R
+/*/test.R
 
+/*/rsconnect
 # End of https://www.gitignore.io/api/r

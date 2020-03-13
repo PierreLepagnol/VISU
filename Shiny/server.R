@@ -4,27 +4,22 @@ library(leaflet)
 library(rlang)
 library(tidyverse)
 library(caret)
-
+library(e1071)
+library(randomForest)
 # Fonction Serveur
 shinyServer(function(session, input, output) {
 
   ## Upload du Dataset####
   datasetInput <- reactive({
     req(input$file1, input$separator) # Nécessite les 2 Variables : file1 & separator
-    tryCatch({
-      data = read_delim(input$file1$datapath, delim = input$separator)
-    },
-    error = function(e) {
-      # return a safeError if a parsing error occurs
-      stop(safeError(e))
-    })
+    read_delim(input$file1$datapath, delim = input$separator) %>% mutate_if(is.character, as.factor)
   })
   ## Listes des algorithmes disponibles####
   Algo_List = reactive({
     req(input$TypeMod)
     if (input$TypeMod == 'Régression') {
       # Listes des Méthodes / Algo : Regression
-      return(list('lm', 'glm'))
+      return(list('lm (Linear Model)'))#, 'glm (Logistic Regression)'))
     }
     if (input$TypeMod == 'Classifcation') {
       # Listes des Méthodes / Algo : Classifcation
@@ -34,8 +29,7 @@ shinyServer(function(session, input, output) {
           'qda (Quadratic Discriminant Analysis)',
           'knn (K-Nearest Neighbors)',
           'rpart (Decision Tree)',
-          'rf (RandomForest)',
-          'adaboost (adaptative boosting)'
+          'rf (RandomForest)'
         )
       )
     }
@@ -58,9 +52,11 @@ shinyServer(function(session, input, output) {
  
   ## Observation de la Variable datasetInput ####
   observe({
-    vchoices <- names(datasetInput() %>% select_if(is.numeric))
-    updateSelectInput(session, "TargetVar", choices = vchoices)
-    updateCheckboxGroupInput(session, "ExpVar", choices = vchoices)
+    
+    name=datasetInput() %>% dplyr::summarise_all(class) %>% tidyr::gather(variable, class)
+    
+    updateSelectInput(session, "TargetVar", choices = name$variable)
+    updateCheckboxGroupInput(session, "ExpVar", choiceNames = paste(name$variable,'(',name$class,')'), choiceValues = name$variable)
   })
  
   ## Observation de la Variable Algo_List ####  
@@ -82,11 +78,11 @@ shinyServer(function(session, input, output) {
   observeEvent({input$runModels},{
     # Récuperer les valeurs de l'Algo créé.
     TuneParams=getTuneParams(Algo$model_name)
-    sequence=seq.int(from=1, to=length(TuneParams$parameter), by=1)
+    sequence=seq.int(from=1, to=length(TuneParams$parameter))
     
-    Algo$TuneParams=map2(sequence,TuneParams$parameter,function(x,y) list('name'=as.character(y),'value'=input[[paste0("TuneParams",x)]]) )
+    Algo$TuneParams=map2(sequence,TuneParams$parameter,function(x,y){return(list('name'=as.character(y),'value'=input[[paste0("TuneParams",x)]]) )}) 
     formule=createFormula(input$TargetVar,input$ExpVar)
-    Algo$model=Train_n_Test_model(Algo$model_name,input$AlgoInput,input$ValidValue,Algo$TuneParams,input$TargetVar,input$ExpVar,formule)
+    Algo$model=Train_n_Test_model(Algo$model_name,input$TypeValid,input$ValidValue,Algo$TuneParams,formule,input$TargetVar,input$ExpVar)
   })
   
   
@@ -96,33 +92,39 @@ shinyServer(function(session, input, output) {
     return(as.formula(form))
   }
   
-  ## Train_n_Test_model ####
-  Train_n_Test_model = function(model_str,MethodValidation,ValidValue,TuneParams,TargetVar,ExpVar,FORMU) {
-    
-    donnees=datasetInput() %>% select(TargetVar,ExpVar)
-    indapp=sample(1:nrow(donnees)) 
-    
-    if(is.null(TuneParams[[1]]$value[1])){
-      # Modèles ne nécéssitant pas de TuneParams 
-      print(model_str)
-      ctrl1=trainControl(method="cv",
-                         number = 5,
-                         repeats = 5) 
-        # -trainControl(method = MethodValidation,number = ValidValue,index = list(indapp))
-      ee1 <-train(FORMU,data = donnees,method = model_str,trControl = ctrl1,verboseIter = TRUE)
-      
-      }else{
-        k_cand=seq.int(from=TuneParams[[1]]$value[1], to=TuneParams[[1]]$value[2])
-        TuneGrid_List <- data.frame(k = k_cand)
-    ee1 <-train(FORMU,data =donnees,method = model_str,trControl = ctrl1,tuneGrid = TuneGrid_List)
-        }
-
-    return(ee1)
+  buildTuneMatrix=function(TuneParams) {
+    if(class(TuneParams$value)!="integer"){
+      df=as.data.frame(TuneParams$value)
+    }else{
+      df=as.data.frame(seq(TuneParams$value[1],TuneParams$value[2]))
+    }
+    colnames(df)=TuneParams$name
+    return(df)
   }
   
+  ## Train_n_Test_model ####
+  Train_n_Test_model = function(model_str,MethodValidation,ValidValue,TuneParams,FORMU,TargetVar,ExpVar) {
+    
+    donnees=datasetInput() %>% select(all_of(TargetVar),all_of(ExpVar))
+
+    if(MethodValidation=='none'){fitControl<-NULL}
+    else{fitControl<-trainControl(method=MethodValidation,number =ValidValue)}
+    
+    if(is.null(TuneParams[[1]]$value)){
+      mod <-train(FORMU, data =donnees, method=model_str, trControl =fitControl)
+    }else{
+      ## creation de la matrice tunegrid selon les paramètres
+      TuneDF=map_df(TuneParams,buildTuneMatrix)
+      print(TuneDF)
+
+      mod  <- train(FORMU, data = donnees,method=model_str,trControl =fitControl,tuneGrid = TuneDF)
+    }
+    return(mod)
+  }
   
   ## Function Renvoi les hyper-parametres du modèle ####
   getTuneParams=function(model_name){
+    print(model_name)
     model_params=getModelInfo(model=model_name,regex = FALSE)[[1]]
     model_params=model_params$parameters
     return(model_params)
@@ -143,7 +145,7 @@ shinyServer(function(session, input, output) {
     if (is.null(Algo$model_name)){return()}
     else{
       TuneParams=getTuneParams(Algo$model_name)
-      sequence=seq.int(from=1, to=length(TuneParams$parameter), by=1)
+      sequence=seq.int(from=1, to=length(TuneParams$parameter))
       liste_UI=pmap(list(as.vector(TuneParams$parameter),as.vector(TuneParams$class),as.vector(TuneParams$label),sequence),selectUiComp)
     }
     liste_UI
@@ -153,12 +155,11 @@ shinyServer(function(session, input, output) {
     switch(input$TypeValid,
            'boot'=sliderInput('ValidValue', label='Nombre de Echantillons Bootstrap : ',min=1,max=80,value=20),
            'cv'=sliderInput('ValidValue', label='Nombre de blocs : ',min=1,max=80,value=20),
-           'LCV'=sliderInput('ValidValue', label='Pourcentage du Dataset pour l\'apprentisage',min=1,max=100,value=70)
+           'LCV'=sliderInput('ValidValue', label='Nombre de blocs : ',min=1,max=nrow(datasetInput()),value=80),
+           ''
            )
     
   })
-  
-  
   
   output$TunningModel <- renderPrint({
     Algo$model
@@ -166,6 +167,23 @@ shinyServer(function(session, input, output) {
   
   output$FinalModel <- renderPrint({
     Algo$model$finalModel
+  })
+  
+  output$Graphs =renderUI({
+    switch(Algo$model_name,
+             ## Plot lm
+           'lm'={},
+           ## Plot LDA
+           'lda'={},
+           ## Plot QDA
+           'qda'={},
+           ## Plot CART
+           'rpart'={},
+           ## Plot Random Forest
+           'rf'={},
+    )
+    predict.mod <- predict(Algo$model)
+       plot(predict.mod)
   })
   
   ## Creation de la carte ####
@@ -190,19 +208,14 @@ shinyServer(function(session, input, output) {
     }, {
     leafletProxy(mapId = "mymap",
                  session = session,
-                 data = datarefactored_poopup()) %>% clearMarkers() %>% addMarkers(
-                   lng = ~ lon,
-                   lat = ~ lat,
-                   popup =  ~ poopup,
-                   label =  ~ get(input$TargetVar)
-                 )
+                 data = datarefactored_poopup()) %>% clearMarkers() %>% addMarkers(lng = ~ lon,lat = ~ lat,popup =  ~ poopup,label =  ~ get(input$TargetVar))
   })
   
   
   
   ## Expression reactive Refactoring Dataset pour PopUp ####
   datarefactored_poopup = reactive({
-    req(input$ExpVar, input$TargetVar)
+    req(input$ExpVar, input$TargetVar,input$runModels)
     vect_name = unlist(input$ExpVar)
     dataset = Poopup_refactor(datasetInput(), vect_name, input$TargetVar)
   })

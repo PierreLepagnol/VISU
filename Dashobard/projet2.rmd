@@ -20,7 +20,8 @@ library(leaflet)
 library(purrr)
 library(graphics)
 
-data <- read.csv("C:/Users/evasi/Documents/M1/S2/Visualisation des données/projet visualisation/DataViz.txt",sep=",",header=T,encoding="UTF-8")
+# data <- read.csv("C:/Users/evasi/Documents/M1/S2/Visualisation des données/projet visualisation/DataViz.txt",sep=",",header=T,encoding="UTF-8")
+data=read_csv('../DataViz.csv')
 ```
 
 Données
