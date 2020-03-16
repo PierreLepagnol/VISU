@@ -23,7 +23,9 @@ L'application se décompose en 3 onglets :
 
 > Modélisation / prédiction : 
 
-* pour créer un modèle et évaluer ses performances
+* Modélisation : Pour créer votre modèle.
+* Prédiction : Pour évaluer ses performances et obtenir les sorties `R`.
+* Graphes : Pour visualiser les graphes adapter au modèle créé.
 
 > Jeu : 
 

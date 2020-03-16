@@ -12,13 +12,22 @@ library(emo)
 
 # Principe de l'application
 
-Explication du principe de l'app.
 
-# Les différents onglets :
+Notre application est une preuve de concept. Un service de création de rapport automatisé.
+
 ## Importation / Exportation
+
+* `Chercher un dataset` : importer votre jeu de données.
+* `Download` : exporter votre rapport. 
 
 ## Modélisation
 
-## Prédiction
+* Modélisation : Lire les recomendation pour la création d'un modèle.
 
 ## Jeu
+
+Une compétition entre vous et la machine. 
+
+Le but est de faire mieux en terme de prédiction (attention pour que le jeu fonctionne il faut un format particulier de dataset).
+
+`Partie encore mal optimisée sujette à quelques bugs.`
