@@ -2,9 +2,10 @@
 title: "Projet Visualisation"
 output: 
   flexdashboard::flex_dashboard:
-    theme: flatly 
+    theme: flatly
     orientation: columns
     vertical_layout: fill
+  runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -20,8 +21,7 @@ library(leaflet)
 library(purrr)
 library(graphics)
 
-# data <- read.csv("C:/Users/evasi/Documents/M1/S2/Visualisation des données/projet visualisation/DataViz.txt",sep=",",header=T,encoding="UTF-8")
-data=read_csv('../DataViz.csv')
+data <- read_delim("./DataViz.csv",delim=",")
 ```
 
 Données
@@ -179,7 +179,6 @@ ggplotly(u4)
 barplot <- ggplot(data)+aes(x=nb_pieces,fill=type)+geom_bar()+geom_text(aes(label=..count..),stat="count",position=position_stack(0.5))+labs(x="nombre de pieces",y="effectif")
 ggplotly(barplot)
 ```
-
 
 Régression  
 ====================================

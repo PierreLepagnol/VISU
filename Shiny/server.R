@@ -6,13 +6,18 @@ library(tidyverse)
 library(caret)
 library(e1071)
 library(randomForest)
+library(rpart.plot)
+library(lmtest)
+library(DataExplorer)
+library(knitr)
+library(lmtest)
 # Fonction Serveur
 shinyServer(function(session, input, output) {
 
   ## Upload du Dataset####
   datasetInput <- reactive({
     req(input$file1, input$separator) # Nécessite les 2 Variables : file1 & separator
-    read_delim(input$file1$datapath, delim = input$separator) %>% mutate_if(is.character, as.factor)
+   read_delim(input$file1$datapath, delim = input$separator) %>% mutate_if(is.character, as.factor)
   })
   ## Listes des algorithmes disponibles####
   Algo_List = reactive({
@@ -82,16 +87,30 @@ shinyServer(function(session, input, output) {
     
     Algo$TuneParams=map2(sequence,TuneParams$parameter,function(x,y){return(list('name'=as.character(y),'value'=input[[paste0("TuneParams",x)]]) )}) 
     formule=createFormula(input$TargetVar,input$ExpVar)
-    Algo$model=Train_n_Test_model(Algo$model_name,input$TypeValid,input$ValidValue,Algo$TuneParams,formule,input$TargetVar,input$ExpVar)
+    
+    
+    Algo$Liste_sets=createTTSets(datasetInput(),input$TargetVar,input$ExpVar)
+    Algo$model=Train_n_Test_model(Algo$model_name,input$TypeValid,input$ValidValue,Algo$TuneParams,formule,Algo$Liste_sets)
   })
   
+  ## Function création des ensembles de Train et et de Test ####
+  createTTSets=function(donnees,TargetVar,ExpVar){
+
+    donnees=donnees %>% select(all_of(TargetVar),all_of(ExpVar))
+    index = createDataPartition(y=getElement(donnees,TargetVar), p=0.8, list=FALSE)
+    train = donnees[index,] 
+    test = donnees[-index,]
+    return(list('train'=train,'test'=test))
+  }
   
+  ## Function création de la formule de fitting ####
   createFormula=function(TargetVar,ExpVar){
     if(is.null(ExpVar)){ ExpVar='.' }
     form=paste0(TargetVar,"~.")
     return(as.formula(form))
   }
   
+  ## Function création du Dataframe des paramètres à Tuner ####
   buildTuneMatrix=function(TuneParams) {
     if(class(TuneParams$value)!="integer"){
       df=as.data.frame(TuneParams$value)
@@ -103,10 +122,9 @@ shinyServer(function(session, input, output) {
   }
   
   ## Train_n_Test_model ####
-  Train_n_Test_model = function(model_str,MethodValidation,ValidValue,TuneParams,FORMU,TargetVar,ExpVar) {
+  Train_n_Test_model = function(model_str,MethodValidation,ValidValue,TuneParams,FORMU,Liste_sets) {
+    donnees=Liste_sets$train
     
-    donnees=datasetInput() %>% select(all_of(TargetVar),all_of(ExpVar))
-
     if(MethodValidation=='none'){fitControl<-NULL}
     else{fitControl<-trainControl(method=MethodValidation,number =ValidValue)}
     
@@ -172,19 +190,45 @@ shinyServer(function(session, input, output) {
   output$Graphs =renderUI({
     switch(Algo$model_name,
              ## Plot lm
-           'lm'={},
+           'lm'=list(plotOutput('LM'),verbatimTextOutput('Txt')),
            ## Plot LDA
-           'lda'={},
+           'lda'=list(plotOutput('LDA'),verbatimTextOutput('Txt')),
            ## Plot QDA
-           'qda'={},
+           'qda'=list(plotOutput('QDA'),verbatimTextOutput('Txt')),
            ## Plot CART
-           'rpart'={},
+           'rpart'=list(plotOutput('RPART'),verbatimTextOutput('Txt')),
            ## Plot Random Forest
            'rf'={},
+           return()
     )
-    predict.mod <- predict(Algo$model)
-       plot(predict.mod)
+    
   })
+  
+  output$RPART=renderPlot({
+    rpart.plot(Algo$model$finalModel,box.palette="red")
+    
+  })
+  # output$Facets=renderPlot()
+  output$LDA=renderPlot({
+    Ytest=Algo$Liste_sets$test %>% select(input$TargetVar,input$ExpVar)
+    pred=predict(Algo$model)
+    # saveRDS(pred,file='./pred')
+    plot(pred)
+    }
+  )
+  
+  output$QDA=renderPlot({
+    Ytest=Algo$Liste_sets$test %>% select(input$TargetVar,input$ExpVar)
+    pred=predict(Algo$model)
+    # saveRDS(pred,file='./pred')
+    
+    plot(pred)
+  }
+  )
+  
+  
+  output$Txt=renderPrint(Algo$model_name)
+  
   
   ## Creation de la carte ####
   output$mymap <- renderLeaflet({
@@ -202,9 +246,10 @@ shinyServer(function(session, input, output) {
   
   
   ## Modification de la carte (Observation de la variable TargetVar,ExpVar) ####
-  observeEvent({
-    input$TargetVar
-    input$ExpVar
+  observeEvent({input$TargetVar 
+    input$ExpVar 
+    input$runModels
+    input$jouer
     }, {
     leafletProxy(mapId = "mymap",
                  session = session,
@@ -215,7 +260,7 @@ shinyServer(function(session, input, output) {
   
   ## Expression reactive Refactoring Dataset pour PopUp ####
   datarefactored_poopup = reactive({
-    req(input$ExpVar, input$TargetVar,input$runModels)
+    req(input$ExpVar, input$TargetVar,input$runModels,input$jouer)
     vect_name = unlist(input$ExpVar)
     dataset = Poopup_refactor(datasetInput(), vect_name, input$TargetVar)
   })
@@ -291,8 +336,8 @@ shinyServer(function(session, input, output) {
                      params <- list(
                        title = input$titleOutput,
                        mesdata = datasetInput(),
-                       mesmodeles = c('KNN', 'LM'),
-                       PCA = FALSE
+                       model_name=Algo$model_name,
+                       modeles = Algo$model
                      )
                      src <- normalizePath('report.Rmd')
                      incProgress(1 / 10)
@@ -333,7 +378,7 @@ shinyServer(function(session, input, output) {
   
   ## Fonction pour générer un individu ####
   createNewIndiv=function(dataset_raw, vect_name, TargetVar){
-    newIndiv  = dataset_raw %>% select(vect_name) %>% map(generate) 
+    newIndiv  = dataset_raw %>% select(all_of(vect_name)) %>% map(generate) 
     newIndiv= as.data.frame(newIndiv)
     names(newIndiv)=vect_name
     return(newIndiv)
@@ -341,11 +386,20 @@ shinyServer(function(session, input, output) {
   ## Fonction pour générer un individu selon `col` ####
   generate=function(col){
     m=mean(col)
-    s=sd(col)
+    s=sd(col)/2
     NewVal=rnorm(1,m,s)
     return(NewVal)
   }
-  
+
+  output$UI_user_gess=renderUI({
+    dfval=datasetInput() %>% select(input$TargetVar)
+    classe=lapply(dfval,class)
+    switch(classe[[1]],
+      'numeric'=numericInput('user_gess', 'Ma prédiction', value=0),
+      'factor'=selectizeInput('user_gess', 'Ma prédiction',choices=dfval)
+        # textInput('user_gess', 'Ma prédiction',placeholder = as.character(input$TargetVar))
+    )
+  })
   
   # Affichage du Nouvel Individu ####
   output$NewIndiv = renderDataTable(DT::datatable(
@@ -358,26 +412,30 @@ shinyServer(function(session, input, output) {
   
   ## Cacul de la TargetVar pour Nouvel Individu ####
   observeEvent({input$btn_predict}, {
-    game$UserPrediction=input$user_gess
     # model=Selected_Model()
-    game$Score=CalclPredic('',NewIndiv_Reactive())
+    game$Pred=predict(Algo$model$finalModel,newdata=NewIndiv_Reactive())
+    print(game$Pred)
+    game$Score=CalcScore(input$user_gess,game$Pred)
     #
   })
   
   output$predicted <- renderText({ 
-    paste('Mon Score :',as.character(game$UserPrediction),as.character(game$Score))
+    paste0('Mon Score :',as.character(game$Pred),'-',as.character(game$Score))
     
   })
   
-  CalclPredic=function(type_pb,model,Indiv){
-    if(type_pb=="Classification"){
-      predicted=predict(model,newdata=Indiv)$class
-    }
-    else{
-      predicted=predict(model,newdata=Indiv)
-    }
-   return(predicted)
+  CalcScore=function(UserPred,AlgoPred){
+    
+    switch (class(AlgoPred),
+            "factor" ={
+              score=1*(UserPred==AlgoPred) 
+              return(score)
+            },
+            "numeric"={return(abs(UserPred-AlgoPred))},
+    )
     
   }
   
   })
+
+

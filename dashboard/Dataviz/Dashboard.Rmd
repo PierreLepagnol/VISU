@@ -1,0 +1,214 @@
+---
+title: "Projet Visualisation"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    orientation: columns
+    vertical_layout: fill
+  runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(rAmCharts)
+library(shiny)
+library(ggmap)
+library(leaflet)
+library(purrr)
+library(graphics)
+
+data <- read_delim("./DataViz.csv",delim=",")
+```
+
+Données
+====================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Tableau
+
+```{r}
+datatable(data=data)
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Carte
+
+```{r}
+# Carte 
+
+# Assets 
+icone <- makeIcon(iconUrl = "https://www.stickpng.com/assets/thumbs/588a6708d06f6719692a2d20.png", iconWidth = 20, iconHeight = 20)
+
+centreCarte=c(mean(data$lon),mean(data$lat))
+
+description <- paste("type de bien :", data$type, "<br/>",  "prix :", data$prix, "euros", "<br/>", "surface :", data$surface, "m²", "<br/>", data$nb_pieces, "pièces", "<br/>", "Site :", data$url) 
+
+# Construction de la carte
+carte <-  leaflet(data=data) %>% setView(lng = centreCarte[1], lat = centreCarte[2], zoom = 12) %>% addTiles()
+
+# Ajout Des markers
+carte %>% addMarkers(~lon, ~lat, popup = ~description, icon=icone)
+```
+
+Carte  
+====================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Carte de Paris groupes de logements : 
+
+```{r}
+# Carte 
+
+# Assets 
+icone <- makeIcon(iconUrl = "https://www.stickpng.com/assets/thumbs/588a6708d06f6719692a2d20.png", iconWidth = 20, iconHeight = 20)
+
+centreCarte=c(mean(data$lon),mean(data$lat))
+
+description <- paste("type de bien :", data$type, "<br/>",  "prix :", data$prix, "euros", "<br/>", "surface :", data$surface, "m²", "<br/>", data$nb_pieces, "pièces", "<br/>", "Site :", data$url) 
+
+# Construction de la carte
+carte <-  leaflet(data=data) %>% setView(lng = centreCarte[1], lat = centreCarte[2], zoom = 12) %>% addTiles()
+
+# Ajout Des markers
+carte %>% addMarkers(~lon, ~lat, popup = ~description, icon=icone,clusterOptions = markerClusterOptions()) 
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Couleurs des icônes : {data-height=250} 
+
+* Vert clair : prix inférieur à 300 000€
+* Vert foncé : prix compris entre 300 000€ et 700 000€
+* Orange : prix compris entre 700 000€ et 1 000 000€ 
+* Rouge : prix supérieur à 1 000 000€
+
+### Carte de Paris en fonction des prix : {data-height=750}
+
+```{r}
+# Carte 
+
+centreCarte=c(mean(data$lon),mean(data$lat))
+
+description <- paste("prix :", data$prix, "euros")
+
+getColor <- function(data) {
+  sapply(data$prix, function(prix) {
+  if(prix <= 300000) {
+    "lightgreen"
+  } else if(prix > 300000 & prix <= 700000) {
+    "green"
+  }else if(prix > 700000 & prix <= 1000000) {
+    "orange"
+  } else {
+    "red"
+  } })
+}
+
+icons <- awesomeIcons(
+  markerColor = getColor(data=data)
+)
+
+carte <-  leaflet(data=data) %>% setView(lng = centreCarte[1], lat = centreCarte[2], zoom = 12) %>% addTiles()
+
+# Ajout Des markers
+carte %>% addAwesomeMarkers(~lon, ~lat, icon=icons, popup = ~ description)
+```
+
+Graphiques 
+====================================
+
+Column {.tabset data-width=500}
+-------------------------------------
+
+### Boxplot maison/appartement
+
+```{r}
+p <- data[,1]
+p1 <- data[,3]
+d <- data.frame(p,p1)
+
+names(d) <- c("type_bien","prix")
+
+d <- as_tibble(d)
+d1 <- filter(d,type_bien=="appartement" | type_bien=="maison")
+
+u <- ggplot(d1)+aes(x=type_bien,y=prix)+geom_boxplot(fill=c("cadetblue1","antiquewhite3"))+theme_bw()
+ggplotly(u)
+
+```
+
+### Boxplot chambre/studio
+
+```{r}
+d2 <- filter(d,type_bien=="chambre" | type_bien=="studio")
+
+u1 <- ggplot(d2)+aes(x=type_bien,y=prix)+geom_boxplot(fill=c("cadetblue1","antiquewhite3"))+theme_bw()
+ggplotly(u1)
+```
+
+Column {.tabset data-width=500}
+-------------------------------------
+
+### Histogramme 
+
+```{r}
+amHist(data$prix,col="lightgreen",border="green",main="Histogramme du prix", xlab="prix",ylab="fréquence")
+```
+
+### Nuage de points   
+
+```{r}
+u4 <- ggplot(data)+aes(x=surface,y=prix,color=type)+geom_point()
+ggplotly(u4)
+```
+
+### Barplot 
+
+```{r}
+barplot <- ggplot(data)+aes(x=nb_pieces,fill=type)+geom_bar()+geom_text(aes(label=..count..),stat="count",position=position_stack(0.5))+labs(x="nombre de pieces",y="effectif")
+ggplotly(barplot)
+```
+
+Régression  
+====================================
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Régression sur le prix : coefficients 
+
+```{r}
+reg <- lm(prix~nb_pieces+nb_chambres+surface,data)
+summary(reg)
+#knitr::kable(coef(reg))
+```
+
+Column {.tabset data-width=550}
+-------------------------------------
+
+### Observation graphique
+
+```{r}
+u4 <- ggplot(data)+aes(x=nb_photo+nb_pieces+nb_chambres+surface,y=prix)+geom_point(size=1,fill="cadetblue3",color="cadetblue3")+geom_smooth(method="lm",color="cadetblue4",fill="antiquewhite1")+theme_minimal()+ggtitle("Régression linéaire sur le prix")
+ggplotly(u4)
+```
+
+### Résidus 
+
+```{r}
+residu <- rstudent(reg)
+amPlot(x=residu,y=data$prix,col="darkblue",ylab="prix")
+```
+
+

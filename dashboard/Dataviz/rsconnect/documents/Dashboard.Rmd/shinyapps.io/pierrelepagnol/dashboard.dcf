@@ -1,0 +1,10 @@
+name: dashboard
+title:
+username:
+account: pierrelepagnol
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1949564
+bundleId: 2881854
+url: https://pierrelepagnol.shinyapps.io/dashboard/
+when: 1584219773.92989

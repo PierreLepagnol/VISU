@@ -83,7 +83,7 @@ shinyUI(
                           splitLayout(verbatimTextOutput('TunningModel', placeholder = FALSE),verbatimTextOutput('FinalModel', placeholder = FALSE))
                           ),
                  tabPanel(title=paste("Graphes",emo::ji("bar_chart")),
-                          flowLayout(uiOutput("Graphs")),
+                          fluidPage(uiOutput("Graphs"), title = NULL, responsive = NULL, theme = NULL),
                  ),
                  id = 'TabmOd',type='tabs' )
              ),
@@ -99,7 +99,7 @@ shinyUI(
                                 ))
         ),
         sidebarLayout(sidebarPanel(h4('Nouvel individu'),actionButton("btn_game", "Nouvel Individus"),dataTableOutput('NewIndiv'),
-                                   numericInput('user_gess', 'Ma prédiction', value=0),actionButton("btn_predict", "Soumettre ma prédiction")),
+                                   uiOutput('UI_user_gess'),actionButton("btn_predict", "Soumettre ma prédiction"),actionButton("jouer", "Jouer")),
                       mainPanel(
                           absolutePanel(top=80, right=20, width = '32%',fixed = TRUE,style =" color:#fff;z-index: 10;",
                                         wellPanel(style = "background: #27ae60;opacity:0.80;",textOutput("predicted"))

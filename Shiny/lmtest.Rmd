@@ -1,0 +1,67 @@
+## Batteries de Tests
+`r if(testcondition){"### Test de Homosédasticité"}else{"Aucun Test sur ce modèle"} `
+`r if(testcondition) "#### Test de Breusch–Pagan" else " "`
+
+```{r echo=F,eval=testcondition}
+Test1=bptest(params$modeles$finalModel)
+Test1
+```
+
+`r if(testcondition) "#### Test de Goldfeld-Quandt test" else " "`
+```{r echo=F,eval=testcondition}
+Test2=gqtest(params$modeles$finalModel)
+Test2
+```
+
+```{r echo=F,eval=testcondition}
+p_val1 = Test1$p.value
+p_val2 = Test2$p.value
+
+if(p_val1 < 0.05 && p_val2<0.05){
+  Result_Test_Homosed= "Ces deux test donnent les mêmes résultats : on rejette, pour ces deux test, les hypothèses nulles ==> Nous sommes en présence d'hétéroscédasticité."
+}else{
+  Result_Test_Homosed="Un avis approfondi est nécéssaire pour conclure sur ces test. En effet, l'une des deux pvaleur est supérieur à 5%."
+}
+
+```
+
+`r if(testcondition) Result_Test_Homosed`  
+
+`r if(testcondition) "### Test d'autocorrélation d'ordre 1 : Drubin-Watson" else ""`
+```{r eval=testcondition}
+DWtest=dwtest(params$modeles$finalModel)
+d1=0.3
+d2=0.3
+DWStat=DWtest$statistic
+
+# Indétermination sur la statistique
+if((DWStat>d1 && DWStat<d2) || (DWStat>4-d2 && DWStat<4-d1)){
+  Result_Test_Autocor="Zone d'indétermination : nécéssité d'un avis approfondi"
+}
+# Autocoréllation Posititve  
+if(DWStat>0 && DWStat<d1){
+  Result_Test_Autocor="Nous sommes proches de 0, ainsi nous ne pouvons rejetter l'hypothèse Alternative d'Autocorrelation `Positive` des résidus."
+}
+# Autocoréllation Négative
+if(DWStat>4-d1 && DWStat<4){
+  Result_Test_Autocor="Nous sommes proches de 4, ainsi nous ne pouvons rejetter l'hypothèse Alternative d'Autocorrelation `Négative` des résidus."
+}
+
+# Pas d'autocorrélation
+  if(DWStat>d1 && DWStat<4-d2){
+    Result_Test_Autocor="Nous sommes proches de 2, ainsi nous ne pouvons rejetter l'hypothèse de non-autocorrélation des résidus."
+  }
+if(DWtest$p.value){Warning_pvalue='Attention à la significativité du test'}
+
+DWtest
+```
+`r if(testcondition) Result_Test_Autocor`
+`r if(testcondition) Warning_pvalue`  
+
+`r if(testcondition) "### Test de spécification du modèle : Test de Ramsey " else ""`
+```{r,eval=testcondition}
+resettest(params$modeles$finalModel,power = 2:4,type = 'regressor')
+
+Result_Test_Ramsey="Nous ne pouvons rejetté l'hypothèse selon laquelle les coefficients des estimations sont égaux à 0. Ainsi au seuil de 5%, nous pouvons dire que les combinaisons non linéaires des variables explicatives n'ont aucun pouvoir explicatif sur la variable réponse le prix d'un bien. Notre modèle est \"bien\" spécifié."
+```
+`r if(testcondition) Result_Test_Ramsey`

@@ -1,0 +1,116 @@
+---
+title: "Projet : les logements parisiens"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+Le jeu de données que nous avons choisi porte sur des logements à Paris. Nous possédons, grâce à ces données, de nombreuses informations sur ces biens : la surface, le prix, le nombre de pièces et de chambres, la latitude et la longitude du logement, mais aussi les distances des stations de métro les plus proches et des momuments importants de la capitale. 
+
+# L'application Shiny : 
+
+url : 
+
+Pour l'application shiny,  nous avons voulu créer une application qui serait utile même après le cours. Ainsi nous avons créé une application pour faire du reporting.
+
+L'application se décompose en 3 onglets :
+
+> Importation/exportation : 
+
+* pour importer notre jeu de données et exporter notre rapport 
+
+> Modélisation / prédiction : 
+
+* pour créer un modèle et évaluer ses performances
+
+> Jeu : 
+
+* comme son nom l'indique, c'est un jeu, une compétition entre vous et la machine. Le but est de faire mieux en terme de prédiction (attention pour que le jeu fonctionne il faut un format particulier de dataset). 
+
+Nous avons souhaité créer un produit différent et flexible.
+
+### Premier onglet : Importation/exportation : 
+
+Ce premier onglet nous sert à importer notre jeu de données sur les logements à Paris. Cependant, l'application est également capable d'importer de la même façon n'importe quel autre jeu de données. Il est important de bien renseigner le séparateur du document que nous voulons importer. 
+
+De plus, cet onglet permet de télécharger un rapport complet de ce que l'application aura permis d'obtenir, à la suite de la modélisation, comme résultats et comme prédictions à partir du dataset. Il est possible de choisir le format du rapport que l'on souhaite (PDF, html, ou Word) et de choisir un titre pour notre rapport.  
+
+La notice d'utilisation de l'application est également disponible pour bien comprendre le fonctionnement. 
+
+### Deuxième onglet : Modélisation/prédiction : 
+
+Ensuite, nous allons pouvoir créer un modèle à partir des données. Pour cela, il faut sélectionner un type de problème (régression ou classification), une méthode (qui s'adapte en fonction du problème utilisé) et une méthode de validation (avec possibilité de choisir le nombre de blocs ou d'échantillons possibles pour la validation). 
+
+Puis, il suffit de sélectionner la variable à expliquer ainsi que les variables explicatives que l'on souhaite pour le modèle. 
+
+Un petit message est disponible pour nous indiquer que le modèle ainsi crée doit être cohérent. Il est ensuite possible d'ajuster le modèle. 
+
+### Troisième onglet : Le jeu : 
+
+Cette partie est une partie assez ludique puisqu'il s'agit de jouer contre la machine à un jeu de prédiction. En ajoutant un nouvel individu, il faut faire la meilleure prédiction possible. Des consignes sont disponibles pour bien comprendre.  
+
+# Le Dashboard : 
+
+url : 
+
+Le dashboard permettra, dans ce contexte, de visualiser les données et de regrouper les informations les plus importantes à travers plusieurs **cartes**, des **graphiques** et une **régression linéaire**.
+
+### Premier onglet : les données : 
+
+Le premier onglet permet d'obtenir le tableau de données utilisé et la carte de Paris. Cette carte permet d'observer les logements du jeu de données dans la capitale et avoir les informations sur chacun de ces biens en cliquant sur l'icône "maison". 
+
+Cette carte permet de voir directement où se situent les logements sur Paris tout en ayant des informations essentielles sur ceux-ci (type de bien, prix, surface, nombre de pièces et l'url du site de l'annonce). 
+
+### Deuxième onglet : les cartes : 
+
+La première carte représente les logements par zones. En cliquant sur une zone, on peut voir tous les logements présents à l'intérieur. 
+
+Ceci permet de voir où l'on trouve le plus de logements de notre jeu de données et de mieux situer leur emplacement. De plus, ceci peut être utile pour se concentrer sur une seule zone. 
+
+La deuxième carte permet de visualiser les biens en fonction de leur prix. Chaque bien possède une couleur d'icône, allant du vert clair au rouge, afin de savoir entre quelle somme est compris le prix. 
+
+### Troisième onglet : les graphiques : 
+
+Le troisième onglet présente une série de graphiques, utiles pour résumer l'information. 
+
+> Les boxplots : 
+
+* Boxplot maison/appartement 
+* Boxplot chambre/studio 
+
+Les premiers graphiques réalisés sont deux boxplots des prix en fonction du type de bien. Cela permet de voir les différences de prix entre chaque type de bien. 
+
+> Histogramme : 
+
+L'histogramme permet de voir le nombre de biens ayant les mêmes prix. 
+
+> Nuage de points : 
+
+Ce nuage de points représente la surface en fonction du prix, selon le type de bien. Nous observons donc naturellement une relation positive entre la surface et le prix et que les biens les plus chers et les plus grands sont des maisons, et que les plus petits et les moins chers sont des chambres. 
+
+> Barplot : 
+
+Le dernier graphique réalisé est un barplot du nombre de pièces. Cela permet de voir par type de bien, le nombre de pièces. 
+
+### Quatrième onglet : régression linéaire : 
+
+Dans le troisième onglet, nous avons choisi de faire une régression linéaire afin de savoir quelles variables explicatives pouvaient expliquer le mieux le prix. 
+
+Nous avons choisi la surface, le nombres de pièces et le nombre de chambres comme variables explicatives. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
